@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
 import 'calendar_page.dart';
+import 'database_helper.dart';
 import 'home_page.dart';
 
-void main() {
-  runApp(const Main());
+void main() async {
+  runApp(Main());
+
+  final dbHelper = DatabaseHelper.instance;
+  void _query() async {
+    final allRows = await dbHelper.queryAllRows();
+    print('Database query:');
+    allRows.forEach(print);
+  }
+  _query();
 }
 
 final darkTheme = ThemeData(
@@ -21,7 +30,7 @@ getDarkTheme() {
 }
 
 class Main extends StatelessWidget {
-  const Main({super.key});
+  Main({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +63,11 @@ class NavBarState extends State<NavBar> {
     setState(() {
       index = i;
     });
+    if(index == 0) {
+      calFirst = true;
+    } if(index == 1) {
+      mainFirst = true;
+    }
   }
 
   @override

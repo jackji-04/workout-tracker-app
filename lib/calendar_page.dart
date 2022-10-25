@@ -2,6 +2,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:time_planner/time_planner.dart';
+import 'database_helper.dart';
+
+bool calFirst = true;
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({Key? key}) : super(key: key);
@@ -13,8 +16,7 @@ class CalendarPage extends StatefulWidget {
 class CalendarPageState extends State<CalendarPage> {
   List<TimePlannerTask> tasks = [];
 
-  void addDate(BuildContext context, TimePlannerDateTime time, int duration,
-      String exercise) {
+  void addDate(BuildContext context, TimePlannerDateTime time, int duration, String exercise) {
     List<Color?> colors = [
       Colors.purple,
       Colors.blue,
@@ -42,12 +44,75 @@ class CalendarPageState extends State<CalendarPage> {
       );
     });
 
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Added exercise!')));
+    if(!calFirst) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Added exercise!')));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final dbHelper = DatabaseHelper.instance;
+    void insertData(int month, int day, int hour, int min, int dur, String exer) async {
+      String mo,d,h,m;
+      if(month < 10) {
+        mo = "0" + month.toString();
+      } else {
+        mo = month.toString();
+      }
+      if(day < 10) {
+        d = "0" + day.toString();
+      } else {
+        d = day.toString();
+      }
+      if(hour < 10) {
+        h = "0" + hour.toString();
+      } else {
+        h = hour.toString();
+      }
+      if(min < 10) {
+        m = "0" + min.toString();
+      } else {
+        m = min.toString();
+      }
+
+      Map<String, dynamic> row = {
+        DatabaseHelper.columnId: (mo+"/"+d+";"+h+":"+m),
+        DatabaseHelper.columnDuration: dur,
+        DatabaseHelper.columnExercise: exer
+      };
+      dbHelper.insert(row);
+    }
+
+    if(calFirst) {
+      void addQueryData() async {
+        final allRows = await dbHelper.queryAllRows();
+        for(int i = 0; i < allRows.length; i++) {
+          String asStr = allRows[i].toString();
+          int mo = int.parse(asStr.substring(7,9));
+          int day = int.parse(asStr.substring(10,12));
+          int hr = int.parse(asStr.substring(13,15));
+          int min = int.parse(asStr.substring(16,18));
+          int dur = int.parse(asStr.substring((asStr.indexOf("dur")+5),asStr.indexOf(", exer")));
+          String exer = asStr.substring((asStr.indexOf("exer")+6),asStr.length-1);
+          DateTime now = DateTime.now();
+          int todayDay = int.parse(DateFormat("dd").format(now));
+          int todayMo = int.parse(DateFormat("MM").format(now));
+          if(mo == todayMo && (day-todayDay >= 0)) {
+            TimePlannerDateTime dateTime = TimePlannerDateTime(
+                day: day - todayDay,
+                hour: hr,
+                minutes: min);
+            addDate(context, dateTime, dur, exer);
+          } else if((day-todayDay < 0)) {
+            dbHelper.delete(mo.toString() + "/" + day.toString() + ";" + hr.toString() + ":" + min.toString());
+          }
+        }
+        calFirst = false;
+      }
+      addQueryData();
+    }
+
     DateTime day1 = DateTime.now();
     DateTime day2 = DateTime(day1.year, day1.month, day1.day + 1);
     DateTime day3 = DateTime(day1.year, day1.month, day1.day + 2);
@@ -149,12 +214,18 @@ class CalendarPageState extends State<CalendarPage> {
 
       int duration = (endTime.hour - startTime.hour) * 60 +
           (endTime.minute - startTime.minute);
+      int mo = day1.month;
+      int d = date.day;
+      int h = startTime.hour+1;
+      int m = startTime.minute;
       setState(() {
         dateTime = TimePlannerDateTime(
-            day: date.day - int.parse(DateFormat("dd").format(day1)),
-            hour: startTime.hour + 1,
-            minutes: startTime.minute);
+            day: d - int.parse(DateFormat("dd").format(day1)),
+            hour: h,
+            minutes: m);
         addDate(context, dateTime, duration, exerciseName);
+        insertData(mo,d,h,m,duration,exerciseName);
+        print("ADDED EXERCISE: " + exerciseName + "@" + mo.toString() + "/" + d.toString() + ";" + h.toString() + ":" + m.toString());
       });
     }
 
