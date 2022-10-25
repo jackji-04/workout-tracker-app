@@ -17,20 +17,11 @@ class HomePage extends StatefulWidget {
 class HomePageState extends State<HomePage> {
   List<TimePlannerTask> tasks = [];
 
-  void showExercise() {}
-  void addDate(BuildContext context, TimePlannerDateTime time, int duration, String exercise) {
-    List<Color?> colors = [
-      Colors.purple,
-      Colors.blue,
-      Colors.green,
-      Colors.orange,
-      Colors.lime,
-    ];
-
+  void addDate(BuildContext context, TimePlannerDateTime time, int duration, String exercise, Color color) {
     setState(() {
       tasks.add(
         TimePlannerTask(
-          color: colors[Random().nextInt(colors.length)],
+          color: color,
           dateTime: time,
           minutesDuration: duration,
           daysDuration: 1,
@@ -65,7 +56,8 @@ class HomePageState extends State<HomePage> {
           int hr = int.parse(asStr.substring(13,15));
           int min = int.parse(asStr.substring(16,18));
           int dur = int.parse(asStr.substring((asStr.indexOf("dur")+5),asStr.indexOf(", exer")));
-          String exer = asStr.substring((asStr.indexOf("exer")+6),asStr.length-1);
+          String exer = asStr.substring((asStr.indexOf("exer")+6),asStr.indexOf(", color"));
+          int col = int.parse(asStr.substring((asStr.indexOf("color")+7),asStr.length-1));
           DateTime now = DateTime.now();
           int todayDay = int.parse(DateFormat("dd").format(now));
           int todayMo = int.parse(DateFormat("MM").format(now));
@@ -74,7 +66,7 @@ class HomePageState extends State<HomePage> {
                 day: day - todayDay,
                 hour: hr,
                 minutes: min);
-            addDate(context, dateTime, dur, exer);
+            addDate(context, dateTime, dur, exer, Color(col));
           } else if((day-todayDay < 0)) {
             dbHelper.delete(mo.toString() + "/" + day.toString() + ";" + hr.toString() + ":" + min.toString());
           }
@@ -92,6 +84,7 @@ class HomePageState extends State<HomePage> {
         appBar: AppBar(
           title: const Text("Welcome to Today's Todo!"),
           centerTitle: true,
+          toolbarHeight: 40,
         ),
         body: Center(
           child: TimePlanner(

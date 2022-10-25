@@ -16,19 +16,11 @@ class CalendarPage extends StatefulWidget {
 class CalendarPageState extends State<CalendarPage> {
   List<TimePlannerTask> tasks = [];
 
-  void addDate(BuildContext context, TimePlannerDateTime time, int duration, String exercise) {
-    List<Color?> colors = [
-      Colors.purple,
-      Colors.blue,
-      Colors.green,
-      Colors.orange,
-      Colors.lime,
-    ];
-
+  void addDate(BuildContext context, TimePlannerDateTime time, int duration, String exercise, Color color) {
     setState(() {
       tasks.add(
         TimePlannerTask(
-          color: colors[Random().nextInt(colors.length)],
+          color: color,
           dateTime: time,
           minutesDuration: duration,
           daysDuration: 1,
@@ -53,7 +45,7 @@ class CalendarPageState extends State<CalendarPage> {
   @override
   Widget build(BuildContext context) {
     final dbHelper = DatabaseHelper.instance;
-    void insertData(int month, int day, int hour, int min, int dur, String exer) async {
+    void insertData(int month, int day, int hour, int min, int dur, String exer, int c) async {
       String mo,d,h,m;
       if(month < 10) {
         mo = "0" + month.toString();
@@ -79,7 +71,8 @@ class CalendarPageState extends State<CalendarPage> {
       Map<String, dynamic> row = {
         DatabaseHelper.columnId: (mo+"/"+d+";"+h+":"+m),
         DatabaseHelper.columnDuration: dur,
-        DatabaseHelper.columnExercise: exer
+        DatabaseHelper.columnExercise: exer,
+        DatabaseHelper.columnColor: c
       };
       dbHelper.insert(row);
     }
@@ -94,7 +87,8 @@ class CalendarPageState extends State<CalendarPage> {
           int hr = int.parse(asStr.substring(13,15));
           int min = int.parse(asStr.substring(16,18));
           int dur = int.parse(asStr.substring((asStr.indexOf("dur")+5),asStr.indexOf(", exer")));
-          String exer = asStr.substring((asStr.indexOf("exer")+6),asStr.length-1);
+          String exer = asStr.substring((asStr.indexOf("exer")+6),asStr.indexOf(", color"));
+          int col = int.parse(asStr.substring((asStr.indexOf("color")+7),asStr.length-1));
           DateTime now = DateTime.now();
           int todayDay = int.parse(DateFormat("dd").format(now));
           int todayMo = int.parse(DateFormat("MM").format(now));
@@ -103,7 +97,7 @@ class CalendarPageState extends State<CalendarPage> {
                 day: day - todayDay,
                 hour: hr,
                 minutes: min);
-            addDate(context, dateTime, dur, exer);
+            addDate(context, dateTime, dur, exer, Color(col));
           } else if((day-todayDay < 0)) {
             dbHelper.delete(mo.toString() + "/" + day.toString() + ";" + hr.toString() + ":" + min.toString());
           }
@@ -205,6 +199,11 @@ class CalendarPageState extends State<CalendarPage> {
             content: Text('End time cannot be earlier than start time!')));
         return;
       } else if (endTime.hour == startTime.hour &&
+          endTime.minute < startTime.minute) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('End time cannot be earlier than start time!')));
+        return;
+      } else if (endTime.hour == startTime.hour &&
           endTime.minute == startTime.minute) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text('End time cannot be the same as start time!')));
@@ -218,13 +217,21 @@ class CalendarPageState extends State<CalendarPage> {
       int d = date.day;
       int h = startTime.hour+1;
       int m = startTime.minute;
+      List<Color?> colors = [
+        Colors.purple,
+        Colors.blue,
+        Colors.green,
+        Colors.orange,
+        Colors.red,
+      ];
+      Color c = colors[Random().nextInt(colors.length)]!;
       setState(() {
         dateTime = TimePlannerDateTime(
             day: d - int.parse(DateFormat("dd").format(day1)),
             hour: h,
             minutes: m);
-        addDate(context, dateTime, duration, exerciseName);
-        insertData(mo,d,h,m,duration,exerciseName);
+        addDate(context, dateTime, duration, exerciseName, c);
+        insertData(mo,d,h,m,duration,exerciseName,c.value);
         print("ADDED EXERCISE: " + exerciseName + "@" + mo.toString() + "/" + d.toString() + ";" + h.toString() + ":" + m.toString());
       });
     }

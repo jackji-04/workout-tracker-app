@@ -6,14 +6,15 @@ import 'package:path_provider/path_provider.dart';
 
 class DatabaseHelper {
 
-  static final _databaseName = "MyDatabase.db";
+  static final _databaseName = "workout_calendar.db";
   static final _databaseVersion = 1;
 
-  static final table = 'my_table';
+  static final table = 'cal_table';
 
   static final columnId = 'time';
   static final columnDuration = 'dur';
   static final columnExercise = 'exer';
+  static final columnColor = 'color';
 
   // make this a singleton class
   DatabaseHelper._privateConstructor();
@@ -43,7 +44,8 @@ class DatabaseHelper {
           CREATE TABLE $table (
             $columnId TEXT PRIMARY KEY,
             $columnDuration INTEGER NOT NULL,
-            $columnExercise TEXT NOT NULL
+            $columnExercise TEXT NOT NULL,
+            $columnColor INTEGER NOT NULL
           )
           ''');
   }

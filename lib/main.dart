@@ -2,17 +2,28 @@ import 'package:flutter/material.dart';
 import 'calendar_page.dart';
 import 'database_helper.dart';
 import 'home_page.dart';
+import 'statistics_page.dart';
+
+bool del = false;
 
 void main() async {
   runApp(Main());
 
   final dbHelper = DatabaseHelper.instance;
-  void _query() async {
+  void queryAll() async {
     final allRows = await dbHelper.queryAllRows();
     print('Database query:');
-    allRows.forEach(print);
+    for(int i = 0; i < allRows.length; i++) {
+      print(allRows[i]);
+      if(del) {
+        String asStr = allRows[i].toString();
+        String id = asStr.substring((asStr.indexOf("time")+6),asStr.indexOf(", dur"));
+        print("Deleting: " + id);
+        dbHelper.delete(id);
+      }
+    }
   }
-  _query();
+  queryAll();
 }
 
 final darkTheme = ThemeData(
@@ -56,7 +67,7 @@ class NavBarState extends State<NavBar> {
   static const List<Widget> widgetOpt = <Widget>[
     CalendarPage(),
     HomePage(),
-    Text('Statistics'),
+    StatsPage(),
   ];
 
   void onItemTap(int i) {
